@@ -20,3 +20,4 @@ class MemoryStore:
         self.tenders = demo_tenders()
         self.company = CompanyProfile(name="ABC Technologies",industry="Software Development",services=["Web development","Cloud solutions","IT consultancy"],years_experience=6,employee_count=28,annual_turnover_pkr=42000000,certifications=["SECP registered","FBR registered"],past_projects=["Provincial e-services portal","Banking workflow automation"],location="Islamabad")
         self.analyses: dict[str, dict] = {}
+        self.pipeline: dict[str, dict] = {}

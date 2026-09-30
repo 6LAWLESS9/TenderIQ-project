@@ -1,4 +1,7 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from pydantic import BaseModel, Field
 
 from app.api.dependencies import company_repository, tender_repository
 from app.models.company import CompanyProfile
@@ -8,6 +11,44 @@ from app.repositories.tenders import TenderRepository
 from app.services.analysis import RulesAnalysisService
 
 router = APIRouter()
+
+
+class PipelineUpdate(BaseModel):
+    status: str = Field(pattern="^(Interested|Preparing|Submitted|Won|Lost)$")
+    notes: str = Field(default="", max_length=5000)
+
+
+@router.get("/pipeline")
+async def list_pipeline(request: Request, repo: TenderRepository = Depends(tender_repository)):
+    records = await request.app.state.db.pipeline.find({}, {"_id": 0}).to_list(500) if request.app.state.db is not None else list(request.app.state.memory.pipeline.values())
+    result = []
+    for record in records:
+        tender = await repo.get(record["tender_id"])
+        if tender:
+            result.append({**record, "tender": tender})
+    return result
+
+
+@router.put("/pipeline/{tender_id}")
+async def update_pipeline(tender_id: str, update: PipelineUpdate, request: Request, repo: TenderRepository = Depends(tender_repository)):
+    if not await repo.get(tender_id):
+        raise HTTPException(status_code=404, detail="Tender not found")
+    previous = await request.app.state.db.pipeline.find_one({"tender_id": tender_id}, {"_id": 0}) if request.app.state.db is not None else request.app.state.memory.pipeline.get(tender_id)
+    record = {"tender_id": tender_id, "status": update.status, "notes": update.notes, "saved_at": previous.get("saved_at") if previous else datetime.now(timezone.utc).isoformat(), "updated_at": datetime.now(timezone.utc).isoformat()}
+    if request.app.state.db is not None:
+        await request.app.state.db.pipeline.replace_one({"tender_id": tender_id}, record, upsert=True)
+    else:
+        request.app.state.memory.pipeline[tender_id] = record
+    return record
+
+
+@router.delete("/pipeline/{tender_id}")
+async def remove_pipeline(tender_id: str, request: Request):
+    if request.app.state.db is not None:
+        await request.app.state.db.pipeline.delete_one({"tender_id": tender_id})
+    else:
+        request.app.state.memory.pipeline.pop(tender_id, None)
+    return {"ok": True}
 
 
 @router.get("/health")

@@ -40,6 +40,9 @@ The frontend reads `VITE_API_BASE_URL` (defaults to `http://localhost:8000/api/v
 - `GET /api/v1/tenders` — list/filter tenders (`q`, `category`, `status`)
 - `GET /api/v1/tenders/{tender_id}` — tender details and company-fit analysis
 - `POST /api/v1/tenders/{tender_id}/analyze` — analyze against a company profile
+- `GET /api/v1/pipeline` — list saved tenders with their bid stages and notes
+- `PUT /api/v1/pipeline/{tender_id}` — save a tender or update its stage (`Interested`, `Preparing`, `Submitted`, `Won`, `Lost`) and notes
+- `DELETE /api/v1/pipeline/{tender_id}` — remove a tender from the pipeline
 - `GET /api/v1/company` — current company profile
 - `PUT /api/v1/company` — create or update the company profile
 
@@ -51,4 +54,4 @@ Seed records are inserted into MongoDB only when the tender collection is empty.
 
 ## MVP scope and next steps
 
-The dashboard includes search, category/status filters, deadline and fit summaries, tender detail analysis, and an editable company profile. Tender data is clearly marked as sample data. Before real use, add source-specific ingestion adapters, durable job scheduling, authentication and organization-level access controls, audit history, and a reviewed model/provider integration.
+The dashboard includes search, category/status filters, deadline and fit summaries, tender detail analysis, an editable company profile, and a saved bid pipeline with notes. Tender data is clearly marked as sample data. Pipeline records persist in MongoDB when available and otherwise last for the backend process lifetime. Before real use with company data, add authentication and organization-level access controls, then add source-specific ingestion adapters, durable job scheduling, audit history, and a reviewed model/provider integration.
